@@ -10,3 +10,5 @@ Sorting by Keyword
 Reply to Reviews
 
 Anonymous Option for Reviewers?
+
+Admin Login to delete inappropriate reviews
