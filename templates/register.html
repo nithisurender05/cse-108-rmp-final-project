@@ -1,67 +1,95 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="col-md-6 offset-md-3">
-    <h2>Register</h2>
-    <form method="POST">
-        <div class="mb-3">
-            <label>Account Type</label>
-            <div>
-                <div class="form-check form-check-inline">
-                    <input class="form-check-input" type="radio" name="role" id="roleStudent" value="student" checked>
-                    <label class="form-check-label" for="roleStudent">Student</label>
+<div class="d-flex align-items-center justify-content-center" style="min-height:75vh;">
+    <div class="card shadow-sm" style="max-width:560px; width:100%; background-color:#a0b5ec; border:2px solid #000000;">
+        <div class="card-body">
+            <h2 class="card-title mb-3 text-center fw-bold">Register</h2>
+            <div class="text-center mb-3">
+                <!-- small logo under the Register title -->
+                <svg width="48" height="48" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Site logo">
+                    <rect x="6" y="6" width="30" height="36" rx="3" fill="#eef7ff" stroke="#cfe8ff" stroke-width="1.6" />
+                    <line x1="10" y1="10" x2="34" y2="10" stroke="#e6f4ff" stroke-width="1" />
+                    <line x1="10" y1="16" x2="34" y2="16" stroke="#f0fbff" stroke-width="0.8" />
+                    <g transform="translate(21 24) rotate(-20)">
+                        <rect x="-18" y="-3.5" width="6" height="7" rx="1" fill="#ff8da1" />
+                        <rect x="-12" y="-3.5" width="4" height="7" fill="#c0c0c0" />
+                        <rect x="-8" y="-3.5" width="20" height="7" rx="1" fill="#f4c542" stroke="#e0b93a" stroke-width="0.6" />
+                        <g transform="rotate(180 15 0)">
+                            <polygon points="12,0 18,-4 18,4" fill="#333333" />
+                        </g>
+                    </g>
+                </svg>
+            </div>
+
+            <div class="mx-auto" style="max-width:420px;">
+                <form method="POST" class="p-3">
+                    <div class="mb-3">
+                        <label>Account Type</label>
+                        <div>
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="radio" name="role" id="roleStudent" value="student" checked>
+                                <label class="form-check-label" for="roleStudent">Student</label>
+                            </div>
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="radio" name="role" id="roleProfessor" value="professor">
+                                <label class="form-check-label" for="roleProfessor">Professor</label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label>Username</label>
+                        <input type="text" name="username" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label>Email (optional)</label>
+                        <input type="email" name="email" id="email" class="form-control" placeholder="you@example.com (optional)">
+                    </div>
+                    <div class="mb-3">
+                        <label>Password</label>
+                        <input type="password" name="password" class="form-control" required>
+                    </div>
+
+                    <!-- Professor profile fields -->
+                    <div id="profFields" style="display:none;">
+                        <hr>
+                        <h4>Professor Profile</h4>
+                        <div class="mb-3">
+                            <label>Name (how you'd like it displayed)</label>
+                            <input type="text" name="prof_name" id="prof_name" class="form-control">
+                        </div>
+                        <div class="mb-3">
+                            <label>Department</label>
+                            <select name="department" id="departmentSelect" class="form-select">
+                                <option value="">-- Select Department --</option>
+                                <option value="Computer Science">Computer Science</option>
+                                <option value="Mathematics">Mathematics</option>
+                                <option value="Physics">Physics</option>
+                                <option value="Chemistry">Chemistry</option>
+                                <option value="Biology">Biology</option>
+                                <option value="History">History</option>
+                                <option value="English">English</option>
+                                <option value="Economics">Economics</option>
+                                <option value="Engineering">Engineering</option>
+                                <option value="Other">Other</option>
+                            </select>
+                            <input type="text" name="other_department" id="otherDepartment" class="form-control mt-2" placeholder="Add your department" style="display:none;">
+                        </div>
+                        <div class="mb-3">
+                            <label>University</label>
+                            <input type="text" name="university" id="university" class="form-control">
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-success">Sign Up</button>
+                </form>
+                <div class="text-center mt-3">
+                    <small class="text-muted">Already have an account? <a href="{{ url_for('login') }}">Login</a></small>
                 </div>
-                <div class="form-check form-check-inline">
-                    <input class="form-check-input" type="radio" name="role" id="roleProfessor" value="professor">
-                    <label class="form-check-label" for="roleProfessor">Professor</label>
-                </div>
             </div>
         </div>
-        <div class="mb-3">
-            <label>Username</label>
-            <input type="text" name="username" class="form-control" required>
-        </div>
-        <div class="mb-3">
-            <label>Email</label>
-            <input type="email" name="email" id="email" class="form-control" required>
-        </div>
-        <div class="mb-3">
-            <label>Password</label>
-            <input type="password" name="password" class="form-control" required>
-        </div>
-        <!-- Professor profile fields -->
-        <div id="profFields" style="display:none;">
-            <hr>
-            <h4>Professor Profile</h4>
-            <div class="mb-3">
-                <label>Name (how you'd like it displayed)</label>
-                <input type="text" name="prof_name" id="prof_name" class="form-control">
-            </div>
-            <div class="mb-3">
-                <label>Department</label>
-                <select name="department" id="departmentSelect" class="form-select">
-                    <option value="">-- Select Department --</option>
-                    <option value="Computer Science">Computer Science</option>
-                    <option value="Mathematics">Mathematics</option>
-                    <option value="Physics">Physics</option>
-                    <option value="Chemistry">Chemistry</option>
-                    <option value="Biology">Biology</option>
-                    <option value="History">History</option>
-                    <option value="English">English</option>
-                    <option value="Economics">Economics</option>
-                    <option value="Engineering">Engineering</option>
-                    <option value="Other">Other</option>
-                </select>
-                <input type="text" name="other_department" id="otherDepartment" class="form-control mt-2" placeholder="Add your department" style="display:none;">
-            </div>
-            <div class="mb-3">
-                <label>University</label>
-                <input type="text" name="university" id="university" class="form-control">
-            </div>
-        </div>
-        
-        <button type="submit" class="btn btn-success">Sign Up</button>
-    </form>
+    </div>
 </div>
+
 <script>
     // Show/hide professor fields based on role
     const roleStudent = document.getElementById('roleStudent');

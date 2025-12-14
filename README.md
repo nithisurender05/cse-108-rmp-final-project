@@ -8,7 +8,6 @@ Sorting by Keyword
 - allow admin to block people from posting reviews if their review gets deleted 3 times
 - remove email requirment when creating an account
 - allow people to sort based on most postive reviews and most negative reviews 
-- add search bar to the top to find classes and professors
 - allow tags to be added to reviews so that the professor can see the most postive reviews and the most negative reviews
 - general UI
 
@@ -19,4 +18,5 @@ Done:
 - added replys
 - added teachers login and dashboard
 - made reviews show more details( when the class was took, what grade)
-- 
+- add search bar to the top to find classes and professors
+

@@ -1,0 +1,176 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="col-md-8 offset-md-2">
+    <div class="card">
+        <div class="card-body">
+            <h2>Rate a Class</h2>
+            <p class="text-muted">Choose a class to rate. After selecting a class, pick the professor who taught it or add a new professor.</p>
+
+            <form id="rateForm" method="POST" action="{{ url_for('rate_class') }}">
+                <div class="mb-3">
+                    <label>Course</label>
+                    <select id="courseSelect" name="course" class="form-select">
+                        <option value="">-- Select a course --</option>
+                        {% for c in course_codes %}
+                            <option value="{{ c }}" {% if selected_course and selected_course==c %}selected{% endif %}>{{ c }}</option>
+                        {% endfor %}
+                        <option value="__other__">Other (enter below)</option>
+                    </select>
+                    <input id="courseOther" type="text" name="course_other" class="form-control mt-2" placeholder="Enter course code e.g. CS 101" style="display:none;">
+                </div>
+
+                <div class="mb-3">
+                    <label>Professor</label>
+                    <select id="profSelect" name="professor_id" class="form-select">
+                        <option value="">-- Select professor --</option>
+                        <option value="new">Add a new professor</option>
+                    </select>
+                </div>
+
+                <div id="newProfFields" style="display:none;">
+                    <hr>
+                    <h5>Add Professor</h5>
+                    <div class="mb-3">
+                        <label>Name</label>
+                        <input type="text" name="prof_name" id="prof_name" class="form-control">
+                    </div>
+                    <div class="mb-3">
+                        <label>Department</label>
+                        <select name="department" id="departmentSelect" class="form-select">
+                            <option value="">-- Select Department --</option>
+                            <option value="Computer Science">Computer Science</option>
+                            <option value="Mathematics">Mathematics</option>
+                            <option value="Physics">Physics</option>
+                            <option value="Chemistry">Chemistry</option>
+                            <option value="Biology">Biology</option>
+                            <option value="History">History</option>
+                            <option value="English">English</option>
+                            <option value="Economics">Economics</option>
+                            <option value="Engineering">Engineering</option>
+                            <option value="Other">Other</option>
+                        </select>
+                        <input type="text" name="other_department" id="otherDepartment" class="form-control mt-2" placeholder="Add your department" style="display:none;">
+                    </div>
+                    <div class="mb-3">
+                        <label>University</label>
+                        <input type="text" name="university" class="form-control">
+                    </div>
+                    <hr>
+                </div>
+
+                <div class="mb-3">
+                    <label>Rating</label>
+                    <select name="rating" class="form-select" required>
+                        <option value="5">5 - Excellent</option>
+                        <option value="4">4 - Good</option>
+                        <option value="3">3 - Average</option>
+                        <option value="2">2 - Poor</option>
+                        <option value="1">1 - Terrible</option>
+                    </select>
+                </div>
+
+                <div class="mb-3">
+                    <label>Comment (optional)</label>
+                    <textarea name="comment" class="form-control" rows="3"></textarea>
+                </div>
+
+                <button type="submit" class="btn btn-primary">Submit Rating</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+// Toggle other course input
+const courseSelect = document.getElementById('courseSelect');
+const courseOther = document.getElementById('courseOther');
+courseSelect.addEventListener('change', () => {
+    if (courseSelect.value === '__other__') {
+        courseOther.style.display = 'block';
+        courseOther.required = true;
+        // fetch only if other has value
+        if (courseOther.value) fetchProfessorsForCourse(courseOther.value);
+    } else {
+        courseOther.style.display = 'none';
+        courseOther.required = false;
+        if (courseSelect.value) fetchProfessorsForCourse(courseSelect.value);
+    }
+});
+
+// Toggle new professor fields
+const profSelect = document.getElementById('profSelect');
+const newProfFields = document.getElementById('newProfFields');
+profSelect.addEventListener('change', () => {
+    if (profSelect.value === 'new') {
+        newProfFields.style.display = 'block';
+    } else {
+        newProfFields.style.display = 'none';
+    }
+});
+
+// Department other field logic
+const departmentSelect = document.getElementById('departmentSelect');
+const otherDepartment = document.getElementById('otherDepartment');
+if (departmentSelect) {
+    departmentSelect.addEventListener('change', () => {
+        if (departmentSelect.value === 'Other') {
+            otherDepartment.style.display = 'block';
+            otherDepartment.required = true;
+        } else {
+            otherDepartment.style.display = 'none';
+            otherDepartment.required = false;
+        }
+    });
+}
+
+function fetchProfessorsForCourse(q) {
+    if (!q) return;
+    fetch(`/api/professors_for_course?q=${encodeURIComponent(q)}`)
+        .then(r => r.json())
+        .then(data => {
+            // Clear existing dynamic options (keep the default and 'new')
+            const keep = ['','new'];
+            for (let i = profSelect.options.length -1; i >=0; i--) {
+                const val = profSelect.options[i].value;
+                if (!keep.includes(val)) profSelect.remove(i);
+            }
+            data.forEach(p => {
+                const opt = document.createElement('option');
+                opt.value = p.id;
+                opt.textContent = p.name;
+                profSelect.appendChild(opt);
+            });
+        }).catch(err => {
+            console.error(err);
+        });
+}
+
+// On page load, if a course is preselected, fetch professors
+// Preselect course when provided from query string
+const selectedCourse = "{{ selected_course|e }}";
+    if (selectedCourse) {
+    // If the selected course matches an option, select it; otherwise show the Other field
+    let found = false;
+    for (let i=0;i<courseSelect.options.length;i++) {
+        if (courseSelect.options[i].value === selectedCourse) {
+            courseSelect.selectedIndex = i;
+            found = true;
+            break;
+        }
+    }
+    if (!found) {
+        courseSelect.value = '__other__';
+        courseOther.style.display = 'block';
+        courseOther.required = true;
+        courseOther.value = selectedCourse;
+        if (courseOther.value) fetchProfessorsForCourse(courseOther.value);
+    } else {
+        fetchProfessorsForCourse(selectedCourse);
+    }
+} else if (courseSelect.value) {
+    fetchProfessorsForCourse(courseSelect.value);
+}
+</script>
+
+{% endblock %}

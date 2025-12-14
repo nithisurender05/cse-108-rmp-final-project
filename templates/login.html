@@ -1,17 +1,49 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="col-md-6 offset-md-3">
-    <h2>Login</h2>
-    <form method="POST">
-        <div class="mb-3">
-            <label>Username</label>
-            <input type="text" name="username" class="form-control" required>
+<div class="d-flex align-items-center justify-content-center" style="min-height:75vh;">
+    <div class="card shadow-sm" style="max-width:560px; width:100%; background-color:#a0b5ec; border:2px solid #00040a;">
+        <div class="card-body">
+            <h2 class="card-title mb-3 text-center fw-bold">Login</h2>
+            <div class="text-center mb-3">
+                <!-- small logo under the Login title -->
+                <svg width="48" height="48" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Site logo">
+                    <rect x="6" y="6" width="30" height="36" rx="3" fill="#eef7ff" stroke="#cfe8ff" stroke-width="1.6" />
+                    <line x1="10" y1="10" x2="34" y2="10" stroke="#e6f4ff" stroke-width="1" />
+                    <line x1="10" y1="16" x2="34" y2="16" stroke="#f0fbff" stroke-width="0.8" />
+                    <g transform="translate(21 24) rotate(-20)">
+                        <!-- Eraser (left) -->
+                        <rect x="-18" y="-3.5" width="6" height="7" rx="1" fill="#ff8da1" />
+                        <!-- Metal ferrule -->
+                        <rect x="-12" y="-3.5" width="4" height="7" fill="#c0c0c0" />
+                        <!-- Pencil body (yellow) -->
+                        <rect x="-8" y="-3.5" width="20" height="7" rx="1" fill="#f4c542" stroke="#e0b93a" stroke-width="0.6" />
+                        <!-- Graphite tip (right) -->
+                        <g transform="rotate(180 15 0)">
+                            <polygon points="12,0 18,-4 18,4" fill="#333333" />
+                        </g>
+                    </g>
+                </svg>
+            </div>
+            <div class="mx-auto" style="max-width:420px;">
+                <form method="POST" class="p-3">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Username</label>
+                            <input type="text" name="username" class="form-control" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Password</label>
+                            <input type="password" name="password" class="form-control" required>
+                        </div>
+                        <div class="d-grid gap-2">
+                              <button type="submit" class="btn btn-primary fw-bold">Login</button>
+                        </div>
+                    </form>
+                <div class="text-center mt-3">
+                    <small class="text-muted">Don't have an account? <a href="{{ url_for('register') }}">Register</a></small>
+                </div>
+                
+            </div>
         </div>
-        <div class="mb-3">
-            <label>Password</label>
-            <input type="password" name="password" class="form-control" required>
-        </div>
-        <button type="submit" class="btn btn-primary">Login</button>
-    </form>
+    </div>
 </div>
 {% endblock %}

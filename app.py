@@ -3,6 +3,8 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from flask_bcrypt import Bcrypt
 from datetime import datetime
+from sqlalchemy import func, or_
+import re
 
 app = Flask(__name__)
 
@@ -23,7 +25,7 @@ class User(db.Model, UserMixin):
     __tablename__ = 'users'
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(50), unique=True, nullable=False)
-    email = db.Column(db.String(100), unique=True, nullable=False)
+    email = db.Column(db.String(100), unique=True, nullable=True)
     password_hash = db.Column(db.String(255), nullable=False)
     role = db.Column(db.String(20), nullable=False, server_default='student')
 
@@ -52,6 +54,15 @@ class Review(db.Model):
     votes = db.relationship('ReviewVote', backref='review', lazy=True)
     user = db.relationship('User', backref='reviews', uselist=False)
     replies = db.relationship('ReviewReply', backref='review', lazy=True)
+    
+    
+
+class Course(db.Model):
+    __tablename__ = 'courses'
+    id = db.Column(db.Integer, primary_key=True)
+    code = db.Column(db.String(32), unique=True, nullable=False)
+    title = db.Column(db.String(200), nullable=True)
+
 
 class ReviewVote(db.Model):
     __tablename__ = 'review_votes'
@@ -109,8 +120,8 @@ def register():
         app.logger.debug(f"Register form data — username={username}, email={email}, password_provided={bool(password)}")
 
         # Basic validation
-        if not username or not password or not email:
-            flash('Username, email, and password are required.', 'danger')
+        if not username or not password:
+            flash('Username and password are required.', 'danger')
             return redirect(url_for('register'))
 
         # If professor, require professor name
@@ -123,8 +134,8 @@ def register():
             flash('Username already exists. Please choose another.', 'danger')
             return redirect(url_for('register'))
 
-        # Check email duplicates
-        if User.query.filter_by(email=email).first():
+        # If email provided, check duplicates
+        if email and User.query.filter_by(email=email).first():
             flash('Email already registered. Please use another or log in.', 'danger')
             return redirect(url_for('register'))
 
@@ -132,7 +143,7 @@ def register():
         hashed_pw = bcrypt.generate_password_hash(password).decode('utf-8')
 
         # Create user with selected role
-        new_user = User(username=username, email=email, password_hash=hashed_pw, role=role)
+        new_user = User(username=username, email=email or None, password_hash=hashed_pw, role=role)
         db.session.add(new_user)
         try:
             db.session.commit()
@@ -213,6 +224,203 @@ def professor_detail(id):
         # (No reply list) Keep existing review info
 
     return render_template('professor_detail.html', professor=professor, reviews=reviews, avg_rating=round(avg_rating, 1))
+
+
+@app.route('/search')
+def search():
+    q = request.args.get('q', '')
+    q_stripped = (q or '').strip()
+    if not q_stripped:
+        return redirect(url_for('home'))
+
+    # Professors matching name, department, or university
+    profs_by_name = Professor.query.filter(Professor.name.ilike(f"%{q_stripped}%")).all()
+    profs_by_dept = Professor.query.filter(or_(Professor.department.ilike(f"%{q_stripped}%"), Professor.university.ilike(f"%{q_stripped}%"))).all()
+
+    # Normalize query for course matching (remove non-alphanumeric)
+    q_norm = re.sub(r"\W+", "", q_stripped).lower()
+
+    # Build a SQL expression that removes common separators from course_code and lowercases it
+    cleaned_course = func.lower(func.replace(func.replace(func.replace(Review.course_code, ' ', ''), '-', ''), '.', ''))
+
+    # Find reviews where cleaned course_code contains the normalized query
+    reviews_by_course = []
+    if q_norm:
+        reviews_by_course = Review.query.filter(cleaned_course.ilike(f"%{q_norm}%")).all()
+
+    # Also search review comments for the query (helps match subjects mentioned in reviews)
+    reviews_by_comment = Review.query.filter(Review.comment.ilike(f"%{q_stripped}%")).all()
+
+    # Combine review results
+    reviews = {r.id: r for r in (reviews_by_course + reviews_by_comment)}
+
+    # Map course_code -> set of professors
+    courses_map = {}
+    profs_by_course = {}
+    for r in reviews.values():
+        if not r.course_code:
+            continue
+        code_display = r.course_code
+        prof = r.professor
+        if code_display not in courses_map:
+            courses_map[code_display] = set()
+        if prof:
+            courses_map[code_display].add((prof.id, prof.name))
+            profs_by_course[prof.id] = prof
+
+    # Combine professors from name, department/university, and course/comment matches (unique)
+    profs_dict = {p.id: p for p in profs_by_name}
+    for p in profs_by_dept:
+        profs_dict[p.id] = p
+    for pid, p in profs_by_course.items():
+        profs_dict[pid] = p
+
+    combined_profs = list(profs_dict.values())
+
+    # Convert course map to list for template
+    course_list = []
+    for code, profs in courses_map.items():
+        course_list.append({'course_code': code, 'professors': [{'id': pid, 'name': pname} for pid, pname in sorted(list(profs))]})
+
+    return render_template('search_results.html', query=q_stripped, professors=combined_profs, courses=course_list)
+
+
+@app.route('/api/professors_for_course')
+def professors_for_course():
+    # Return JSON list of professors who have reviews for the given course code
+    q = request.args.get('q', '')
+    q_stripped = (q or '').strip()
+    if not q_stripped:
+        return jsonify([])
+
+    # Normalize course code for matching
+    q_norm = re.sub(r"\W+", "", q_stripped).lower()
+    cleaned_course = func.lower(func.replace(func.replace(func.replace(Review.course_code, ' ', ''), '-', ''), '.', ''))
+
+    profs = {}
+    # First try exact normalized matches
+    matched = Review.query.filter(cleaned_course == q_norm).all()
+    for r in matched:
+        if r.professor:
+            profs[r.professor.id] = r.professor.name
+
+    # Fallback: case-insensitive contains match
+    if not profs:
+        matched2 = Review.query.filter(Review.course_code.ilike(f"%{q_stripped}%")).all()
+        for r in matched2:
+            if r.professor:
+                profs[r.professor.id] = r.professor.name
+
+    out = [{'id': pid, 'name': name} for pid, name in profs.items()]
+    return jsonify(out)
+
+
+@app.route('/rate_class', methods=['GET', 'POST'])
+def rate_class():
+    if request.method == 'POST':
+        course = (request.form.get('course') or '').strip()
+        # If the form used the 'Other' course field, it will post 'course'=='__other__' and the
+        # real value will be in 'course_other'. Prefer that when present.
+        if course == '__other__':
+            course_other = (request.form.get('course_other') or '').strip()
+            course = course_other
+        rating_val = request.form.get('rating')
+        professor_choice = request.form.get('professor_id')
+        comment = request.form.get('comment') or None
+
+        if not course or not rating_val:
+            flash('Course and rating are required.', 'danger')
+            return redirect(url_for('rate_class'))
+
+        try:
+            rating = int(rating_val)
+        except ValueError:
+            flash('Invalid rating.', 'danger')
+            return redirect(url_for('rate_class'))
+
+        professor_id = None
+        # Existing professor selected
+        if professor_choice and professor_choice != 'new':
+            try:
+                professor_id = int(professor_choice)
+                if not Professor.query.get(professor_id):
+                    flash('Selected professor not found.', 'danger')
+                    return redirect(url_for('rate_class'))
+            except ValueError:
+                professor_id = None
+
+        # Add new professor
+        if professor_choice == 'new':
+            prof_name = request.form.get('prof_name')
+            department = request.form.get('department') or ''
+            other_dept = request.form.get('other_department') or ''
+            if (not department or department == 'Other') and other_dept:
+                department = other_dept
+            university = request.form.get('university')
+
+            if not prof_name:
+                flash('Professor name is required when adding a new professor.', 'danger')
+                return redirect(url_for('rate_class'))
+
+            try:
+                new_prof = Professor(name=prof_name, department=department, university=university)
+                db.session.add(new_prof)
+                db.session.commit()
+                professor_id = new_prof.id
+            except Exception:
+                db.session.rollback()
+                app.logger.exception('Failed to create new professor')
+                flash('Failed to create professor. Try again.', 'danger')
+                return redirect(url_for('rate_class'))
+
+        if not professor_id:
+            flash('Please select or add a professor to associate with this class.', 'danger')
+            return redirect(url_for('rate_class'))
+
+        user_id = current_user.id if current_user.is_authenticated else None
+        # Ensure the Course exists in Course table for future quick-selection
+        try:
+            existing_course = Course.query.filter(func.lower(Course.code) == course.lower()).first()
+        except Exception:
+            existing_course = None
+        if not existing_course:
+            try:
+                new_course = Course(code=course)
+                db.session.add(new_course)
+                db.session.commit()
+            except Exception:
+                db.session.rollback()
+        new_review = Review(user_id=user_id, professor_id=professor_id, course_code=course, rating=rating, comment=comment)
+        db.session.add(new_review)
+        db.session.commit()
+        flash('Class rating submitted.', 'success')
+        return redirect(url_for('professor_detail', id=professor_id))
+
+    # GET: build a list of distinct course codes from reviews
+    codes = [rc[0] for rc in db.session.query(Review.course_code).distinct().all() if rc[0]]
+    codes = sorted({c.strip() for c in codes})
+    selected = request.args.get('course', '')
+    return render_template('rate_class.html', course_codes=codes, selected_course=selected)
+
+
+@app.route('/api/course_codes')
+def api_course_codes():
+    # Prefer explicit Course table if populated
+    try:
+        course_rows = Course.query.order_by(Course.code.asc()).all()
+    except Exception:
+        course_rows = []
+
+    if course_rows:
+        codes = [c.code for c in course_rows]
+        return jsonify(codes)
+
+    codes = [rc[0] for rc in db.session.query(Review.course_code).distinct().all() if rc[0]]
+    codes = sorted({c.strip() for c in codes})
+    return jsonify(codes)
+
+
+
 
 
 @app.route('/review/<int:review_id>/reply', methods=['POST'])
@@ -403,20 +611,20 @@ def professor_signup():
             department = other_dept
         university = request.form.get('university')
 
-        if not username or not password or not email or not prof_name:
-            flash('All fields required for professor signup.', 'danger')
+        if not username or not password or not prof_name:
+            flash('Username, password, and professor name are required for professor signup.', 'danger')
             return redirect(url_for('professor_signup'))
 
         if User.query.filter_by(username=username).first():
             flash('Username already exists. Please choose another.', 'danger')
             return redirect(url_for('professor_signup'))
 
-        if User.query.filter_by(email=email).first():
+        if email and User.query.filter_by(email=email).first():
             flash('Email already registered. Please login instead.', 'danger')
             return redirect(url_for('login'))
 
         hashed_pw = bcrypt.generate_password_hash(password).decode('utf-8')
-        user = User(username=username, email=email, password_hash=hashed_pw, role='professor')
+        user = User(username=username, email=email or None, password_hash=hashed_pw, role='professor')
         db.session.add(user)
         db.session.commit()
 

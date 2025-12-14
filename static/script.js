@@ -63,17 +63,19 @@ function vote(reviewId, voteType) {
                     dislikeBtn.classList.remove('btn-danger');
                     dislikeBtn.classList.add('btn-outline-danger');
                 }
-            }
 
-            // Alert with current counts. If both likes and dislikes exist, highlight it.
-            if (likes > 0 && dislikes > 0) {
-                alert(`This review has both Likes and Dislikes\nLikes: ${likes} | Dislikes: ${dislikes}`);
-            } else {
-                alert(`Likes: ${likes} | Dislikes: ${dislikes}`);
-            }
-        } else {
-            alert('Something went wrong.');
-        }
-    })
-    .catch(error => console.error('Error:', error));
-}
+        Array.from(tagsSelect.querySelectorAll('optgroup')).forEach(og => {
+            const type = og.getAttribute('data-type');
+            const disable = (type === 'positive' && !showPositive) || (type === 'negative' && !showNegative);
+            Array.from(og.querySelectorAll('option')).forEach(opt => {
+                opt.disabled = disable;
+                // visually hide options when disabled for better UX
+                opt.style.display = disable ? 'none' : '';
+            });
+        });
+    }
+
+    ratingSelect.addEventListener('change', updateTagOptions);
+    // initialize on load
+    updateTagOptions();
+});

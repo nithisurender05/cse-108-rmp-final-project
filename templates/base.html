@@ -8,7 +8,38 @@
 <body class="bg-light">
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4">
         <div class="container">
-            <a class="navbar-brand" href="{{ url_for('home') }}">RateMyProf Clone</a>
+            <a class="navbar-brand d-flex align-items-center" href="{{ url_for('home') }}">
+                <!-- Pen-and-paper logo: paper rectangle with pen on top (simpler for visibility) -->
+                <svg class="me-2" width="36" height="36" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Site logo">
+                    <!-- Paper -->
+                    <rect x="6" y="6" width="30" height="36" rx="3" fill="#eef7ff" stroke="#cfe8ff" stroke-width="1.6" />
+                    <!-- Fold/lines -->
+                    <line x1="10" y1="10" x2="34" y2="10" stroke="#e6f4ff" stroke-width="1" />
+                    <line x1="10" y1="16" x2="34" y2="16" stroke="#f0fbff" stroke-width="0.8" />
+                    <!-- Pencil positioned at the visual center of the paper -->
+                    <g transform="translate(21 24) rotate(-20)">
+                        <!-- Eraser (left) -->
+                        <rect x="-19" y="-3" width="6" height="6" rx="1" fill="#ff8da1" />
+                        <!-- Metal ferrule -->
+                        <rect x="-13" y="-3" width="4" height="6" fill="#c0c0c0" />
+                        <!-- Pencil body (yellow) -->
+                        <rect x="-9" y="-3" width="22" height="6" rx="1" fill="#f4c542" stroke="#e0b93a" stroke-width="0.6" />
+                        <!-- Graphite tip (right) -->
+                        <g transform="rotate(180 16 0)">
+                            <polygon points="13,0 19,-4 19,4" fill="#333333" />
+                        </g>
+                    </g>
+                </svg>
+                <span class="fw-bold">RateMyProf Clone</span>
+            </a>
+            <div class="d-flex ms-3 me-auto align-items-center">
+                <form class="d-flex" method="get" action="{{ url_for('search') }}">
+                    <input class="form-control me-2" type="search" name="q" placeholder="Search professors or classes" aria-label="Search">
+                    <button class="btn btn-outline-light" type="submit">Search</button>
+                </form>
+
+                <a class="btn btn-outline-light btn-sm ms-3" href="{{ url_for('rate_class') }}">Rate Course</a>
+            </div>
             <div class="navbar-nav ms-auto">
                 {% if current_user.is_authenticated %}
                     <span class="nav-item nav-link text-light">Hello, {{ current_user.username }}</span>
