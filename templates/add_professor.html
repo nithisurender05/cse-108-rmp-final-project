@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="col-md-8 offset-md-2">
+    <h2>Add a Professor</h2>
+    <form method="POST" action="{{ url_for('add_professor') }}">
+        <div class="mb-3">
+            <label>Name</label>
+            <input type="text" name="name" class="form-control" required placeholder="Dr. Jane Doe">
+        </div>
+        <div class="mb-3">
+            <label>Department</label>
+            <select name="department" id="departmentSelect" class="form-select">
+                <option value="">-- Select Department --</option>
+                <option value="Computer Science">Computer Science</option>
+                <option value="Mathematics">Mathematics</option>
+                <option value="Physics">Physics</option>
+                <option value="Chemistry">Chemistry</option>
+                <option value="Biology">Biology</option>
+                <option value="History">History</option>
+                <option value="English">English</option>
+                <option value="Economics">Economics</option>
+                <option value="Engineering">Engineering</option>
+                <option value="Other">Other</option>
+            </select>
+            <input type="text" name="other_department" id="otherDepartment" class="form-control mt-2" placeholder="Add your department" style="display:none;">
+        </div>
+        <script>
+            const departmentSelect = document.getElementById('departmentSelect');
+            const otherDepartment = document.getElementById('otherDepartment');
+            function updateOtherDepartment(){
+                if (departmentSelect.value === 'Other'){
+                    otherDepartment.style.display = 'block';
+                    otherDepartment.required = true;
+                } else {
+                    otherDepartment.style.display = 'none';
+                    otherDepartment.required = false;
+                }
+            }
+            departmentSelect.addEventListener('change', updateOtherDepartment);
+            updateOtherDepartment();
+        </script>
+        <div class="mb-3">
+            <label>University</label>
+            <input type="text" name="university" class="form-control" placeholder="Your University">
+        </div>
+        <button type="submit" class="btn btn-success">Add Professor</button>
+    </form>
+</div>
+{% endblock %}

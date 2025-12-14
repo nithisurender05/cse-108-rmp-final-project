@@ -33,12 +33,36 @@ def seed_data():
             professor_id=profs[0].id, 
             course_code="CS 101", 
             rating=5, 
-            comment="Incredible lecturer, invented computers basically."
+            comment="Incredible lecturer, invented computers basically.",
+            grade='A',
+            semester='Fall',
+            year=2023
         )
         db.session.add(review1)
         
         db.session.commit()
-        print("Database seeded! Created 5 professors, 1 user, and 1 review.")
+        # 5. Create a professor user for testing
+        hashed_pw2 = bcrypt.generate_password_hash("professor123").decode('utf-8')
+        prof_user = User(username="prof_jones", email="jones@example.com", password_hash=hashed_pw2, role='professor')
+        db.session.add(prof_user)
+        db.session.commit()
+
+        # Create professor profile linking to the prof user
+        prof_profile = Professor(name="Dr. Jones", department="History", university="State U", user_id=prof_user.id)
+        db.session.add(prof_profile)
+        db.session.commit()
+        # 6. Create an admin user for testing
+        hashed_admin_pw = bcrypt.generate_password_hash("adminpass").decode('utf-8')
+        admin_user = User(username="admin", email="admin@example.com", password_hash=hashed_admin_pw, role='admin')
+        db.session.add(admin_user)
+        db.session.commit()
+
+        # Add a few reviews for Dr. Jones
+        r1 = Review(user_id=test_user.id, professor_id=prof_profile.id, course_code="HIST 200", rating=2, comment="Hard grading and unclear expectations.", grade='B-', semester='Spring', year=2023)
+        r2 = Review(user_id=test_user.id, professor_id=prof_profile.id, course_code="HIST 201", rating=4, comment="Great lectures but heavy workload.", grade='A-', semester='Fall', year=2022)
+        db.session.add_all([r1, r2])
+        db.session.commit()
+        print("Database seeded! Created 5 professors, 1 user, admin user, and several reviews.")
 
 if __name__ == "__main__":
     seed_data()

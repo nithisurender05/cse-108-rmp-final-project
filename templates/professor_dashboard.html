@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="card">
+    <div class="card-body">
+        <h2>{{ professor.name }}</h2>
+        <p>{{ professor.department }} - {{ professor.university }}</p>
+        <h4>Average Rating: <span class="badge bg-success">{{ avg_rating }} / 5</span></h4>
+        <hr>
+        <h4>AI Summary of Criticism</h4>
+        {% if ai_summary %}
+            <p>{{ ai_summary }}</p>
+        {% else %}
+            <p>No reviews yet to summarize.</p>
+        {% endif %}
+        <hr>
+        <h5>All Reviews</h5>
+        {% for review in reviews %}
+            <div class="card mb-2">
+                <div class="card-body">
+                    <strong>Course: {{ review.course_code }}</strong>
+                    <span class="badge bg-primary ms-2">Rating: {{ review.rating }}/5</span>
+                    <p>{{ review.comment }}</p>
+                    {% if review.semester and review.year %}
+                        <div><small class="text-muted">Semester: {{ review.semester }} {{ review.year }}</small></div>
+                    {% endif %}
+                    {% if review.grade %}
+                        <div><small class="text-muted">Grade Received: {{ review.grade }}</small></div>
+                    {% endif %}
+                    <small>By: Anonymous</small>
+                </div>
+            </div>
+        {% else %}
+            <p>No reviews yet for this professor.</p>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

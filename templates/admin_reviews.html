@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="col-md-10 offset-md-1">
+    <h2>Admin — Manage Reviews</h2>
+    <p>Only admin accounts can access this page.</p>
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Professor</th>
+                <th>Course</th>
+                <th>Rating</th>
+                <th>Author</th>
+                <th>Comment</th>
+                <th>Created At</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for r in reviews %}
+            <tr>
+                <td>{{ r.id }}</td>
+                <td>
+                    {% if r.professor %}
+                        <a href="{{ url_for('professor_detail', id=r.professor.id) }}">{{ r.professor_name }}</a>
+                    {% else %}
+                        {{ r.professor_name }}
+                    {% endif %}
+                </td>
+                <td>{{ r.course_code }}</td>
+                <td>{{ r.rating }}</td>
+                <td>{{ r.author_name }}</td>
+                <td>
+                    <div>{{ r.comment[:80] }}{% if r.comment|length > 80 %}...{% endif %}</div>
+                    {% if r.replies_list and r.replies_list|length > 0 %}
+                        <div class="mt-2">
+                            <strong>Replies:</strong>
+                            <ul class="list-unstyled mb-0 ps-3">
+                                {% for reply in r.replies_list %}
+                                    <li class="mb-1">
+                                        <div>{{ reply.comment }} <small class="text-muted">{{ reply.created_at.strftime('%Y-%m-%d %H:%M') }}</small></div>
+                                        {% if current_user.role == 'admin' %}
+                                            <form method="POST" action="{{ url_for('admin_delete_reply', reply_id=reply.id) }}" style="display:inline;" onsubmit="return confirm('Delete reply #'+{{ reply.id }}+'?');">
+                                                <button type="submit" class="btn btn-sm btn-outline-danger">Delete Reply</button>
+                                            </form>
+                                        {% endif %}
+                                    </li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    {% endif %}
+                </td>
+                <td>{{ r.created_at.strftime('%Y-%m-%d %H:%M') if r.created_at else '' }}</td>
+                <td>
+                    <form method="POST" action="{{ url_for('admin_delete_review', review_id=r.id) }}" onsubmit="return confirm('Delete review #'+{{ r.id }}+'?');">
+                        <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

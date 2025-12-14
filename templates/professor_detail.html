@@ -33,16 +33,60 @@
     </div>
     <div class="card-body">
         <p class="card-text">{{ review.comment }}</p>
+        {% if review.semester and review.year %}
+            <div><small class="text-muted">Semester: {{ review.semester }} {{ review.year }}</small></div>
+        {% endif %}
+        {% if review.grade %}
+            <div><small class="text-muted">Grade Received: {{ review.grade }}</small></div>
+        {% endif %}
         
         <div class="btn-group" role="group">
-            <button type="button" class="btn btn-outline-success btn-sm" onclick="vote({{ review.id }}, 1)">
-                👍 Like
-            </button>
-            <button type="button" class="btn btn-outline-danger btn-sm" onclick="vote({{ review.id }}, -1)">
-                👎 Dislike
-            </button>
+            {% if current_user.is_authenticated %}
+                <button id="like-btn-{{ review.id }}" type="button" class="btn {% if review.user_vote == 1 %}btn-success{% else %}btn-outline-success{% endif %} btn-sm" onclick="vote({{ review.id }}, 1)">
+                    👍 Like <span id="likes-{{ review.id }}" class="badge bg-light text-dark ms-2">{{ review.likes_count }}</span>
+                </button>
+                <button id="dislike-btn-{{ review.id }}" type="button" class="btn {% if review.user_vote == -1 %}btn-danger{% else %}btn-outline-danger{% endif %} btn-sm" onclick="vote({{ review.id }}, -1)">
+                    👎 Dislike <span id="dislikes-{{ review.id }}" class="badge bg-light text-dark ms-2">{{ review.dislikes_count }}</span>
+                </button>
+            {% else %}
+                <button id="like-btn-{{ review.id }}" type="button" class="btn btn-outline-success btn-sm" disabled>
+                    👍 Like <span id="likes-{{ review.id }}" class="badge bg-light text-dark ms-2">{{ review.likes_count }}</span>
+                </button>
+                <button id="dislike-btn-{{ review.id }}" type="button" class="btn btn-outline-danger btn-sm" disabled>
+                    👎 Dislike <span id="dislikes-{{ review.id }}" class="badge bg-light text-dark ms-2">{{ review.dislikes_count }}</span>
+                </button>
+            {% endif %}
+        </div>
+        <!-- Replies Section -->
+        <div class="mt-3">
+            <h6>Replies</h6>
+            {% if review.replies_list and review.replies_list|length > 0 %}
+                {% for reply in review.replies_list %}
+                    <div class="border rounded p-2 mb-2 bg-white">
+                        <div class="d-flex justify-content-between">
+                            <div><strong>Anonymous</strong></div>
+                            <small class="text-muted">{{ reply.created_at.strftime('%Y-%m-%d %H:%M') }}</small>
+                        </div>
+                        <div>{{ reply.comment }}</div>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <div class="text-muted">No replies yet.</div>
+            {% endif %}
+
+            {% if current_user.is_authenticated %}
+                <form method="POST" action="{{ url_for('add_reply', review_id=review.id) }}" class="mt-2">
+                    <div class="mb-2">
+                        <textarea name="reply_comment" rows="2" class="form-control" placeholder="Write a reply..." required></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-sm btn-secondary">Reply</button>
+                </form>
+            {% else %}
+                <div class="mt-2"><small class="text-muted">Please <a href="{{ url_for('login') }}">login</a> to reply.</small></div>
+            {% endif %}
         </div>
     </div>
+    
 </div>
 {% else %}
     <p>No reviews yet. Be the first!</p>
@@ -58,6 +102,25 @@
             <div class="mb-3">
                 <label>Course Code</label>
                 <input type="text" name="course" class="form-control" required placeholder="e.g. MATH 201">
+            </div>
+            <div class="row mb-3">
+                <div class="col-md-4">
+                    <label>Semester</label>
+                    <select name="semester" class="form-select">
+                        <option value="">--</option>
+                        <option value="Fall">Fall</option>
+                        <option value="Spring">Spring</option>
+                        <option value="Summer">Summer</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label>Year</label>
+                    <input type="number" name="year" min="1970" max="2100" class="form-control" placeholder="2024">
+                </div>
+                <div class="col-md-4">
+                    <label>Grade (optional)</label>
+                    <input type="text" name="grade" class="form-control" placeholder="A, A-, B+">
+                </div>
             </div>
             <div class="mb-3">
                 <label>Rating (1-5)</label>
