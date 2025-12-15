@@ -203,7 +203,8 @@ def professor_detail(id):
     if course_filter:
         reviews = Review.query.filter_by(professor_id=id, course_code=course_filter).all()
     else:
-        reviews = professor.reviews
+        # make a copy so we can sort safely
+        reviews = list(professor.reviews)
 
     # Calculate Average Rating
     avg_rating = 0
@@ -221,9 +222,17 @@ def professor_detail(id):
             r.user_vote = 0
         # Load replies for each review
         r.replies_list = ReviewReply.query.filter_by(review_id=r.id).order_by(ReviewReply.created_at.asc()).all()
-        # (No reply list) Keep existing review info
 
-    return render_template('professor_detail.html', professor=professor, reviews=reviews, avg_rating=round(avg_rating, 1))
+    # Sorting: support ?sort=most_positive or ?sort=most_negative
+    sort = request.args.get('sort', '')
+    if sort == 'most_positive':
+        # prioritize higher rating then more likes, most recent first
+        reviews.sort(key=lambda r: (r.rating, r.likes_count, r.created_at), reverse=True)
+    elif sort == 'most_negative':
+        # prioritize lower rating then more dislikes; show most critical first
+        reviews.sort(key=lambda r: (r.rating, -r.dislikes_count, r.created_at))
+
+    return render_template('professor_detail.html', professor=professor, reviews=reviews, avg_rating=round(avg_rating, 1), sort=sort)
 
 
 @app.route('/search')

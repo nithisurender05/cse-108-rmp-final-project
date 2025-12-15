@@ -9,6 +9,15 @@
     </div>
 </div>
 
+<div class="d-flex align-items-center mb-3">
+  <div class="me-2">Sort:</div>
+  <a href="{{ url_for('professor_detail', id=professor.id, sort='most_positive', course=request.args.get('course')) }}" class="btn btn-sm {% if sort == 'most_positive' %}btn-primary{% else %}btn-outline-primary{% endif %}">Most Positive</a>
+  <a href="{{ url_for('professor_detail', id=professor.id, sort='most_negative', course=request.args.get('course')) }}" class="btn btn-sm ms-2 {% if sort == 'most_negative' %}btn-danger{% else %}btn-outline-danger{% endif %}">Most Negative</a>
+  {% if request.args.get('sort') %}
+    <a href="{{ url_for('professor_detail', id=professor.id, course=request.args.get('course')) }}" class="btn btn-sm ms-3 btn-secondary">Clear</a>
+  {% endif %}
+</div>
+
 <form method="GET" action="{{ url_for('professor_detail', id=professor.id) }}" class="row g-3 mb-4">
     <div class="col-auto">
         <input type="text" name="course" class="form-control" 
@@ -44,17 +53,17 @@
         <div class="btn-group" role="group">
             {% if current_user.is_authenticated %}
                 <button id="like-btn-{{ review.id }}" type="button" class="btn {% if review.user_vote == 1 %}btn-success{% else %}btn-outline-success{% endif %} btn-sm" onclick="vote({{ review.id }}, 1)">
-                    👍 Like <span id="likes-{{ review.id }}" class="badge bg-light text-dark ms-2">{{ review.likes_count }}</span>
+                    👍 <span id="likes-{{ review.id }}">{{ review.likes_count }}</span>
                 </button>
                 <button id="dislike-btn-{{ review.id }}" type="button" class="btn {% if review.user_vote == -1 %}btn-danger{% else %}btn-outline-danger{% endif %} btn-sm" onclick="vote({{ review.id }}, -1)">
-                    👎 Dislike <span id="dislikes-{{ review.id }}" class="badge bg-light text-dark ms-2">{{ review.dislikes_count }}</span>
+                    👎 <span id="dislikes-{{ review.id }}">{{ review.dislikes_count }}</span>
                 </button>
             {% else %}
                 <button id="like-btn-{{ review.id }}" type="button" class="btn btn-outline-success btn-sm" disabled>
-                    👍 Like <span id="likes-{{ review.id }}" class="badge bg-light text-dark ms-2">{{ review.likes_count }}</span>
+                    👍 <span id="likes-{{ review.id }}" class="badge bg-light text-dark ms-2">{{ review.likes_count }}</span>
                 </button>
                 <button id="dislike-btn-{{ review.id }}" type="button" class="btn btn-outline-danger btn-sm" disabled>
-                    👎 Dislike <span id="dislikes-{{ review.id }}" class="badge bg-light text-dark ms-2">{{ review.dislikes_count }}</span>
+                    👎 <span id="dislikes-{{ review.id }}" class="badge bg-light text-dark ms-2">{{ review.dislikes_count }}</span>
                 </button>
             {% endif %}
         </div>
