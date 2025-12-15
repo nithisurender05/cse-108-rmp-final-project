@@ -63,19 +63,10 @@ function vote(reviewId, voteType) {
                     dislikeBtn.classList.remove('btn-danger');
                     dislikeBtn.classList.add('btn-outline-danger');
                 }
-
-        Array.from(tagsSelect.querySelectorAll('optgroup')).forEach(og => {
-            const type = og.getAttribute('data-type');
-            const disable = (type === 'positive' && !showPositive) || (type === 'negative' && !showNegative);
-            Array.from(og.querySelectorAll('option')).forEach(opt => {
-                opt.disabled = disable;
-                // visually hide options when disabled for better UX
-                opt.style.display = disable ? 'none' : '';
-            });
-        });
-    }
-
-    ratingSelect.addEventListener('change', updateTagOptions);
-    // initialize on load
-    updateTagOptions();
-});
+            }  // <--- ADDED THIS CLOSING BRACE
+        }
+    })
+    .catch(error => {
+        console.error('Error voting:', error);
+    });
+}
