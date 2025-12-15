@@ -4,19 +4,18 @@ Rate My Professor DUPE!
 😈😺  𝐓ᕼ𝒾ＮĞＳ Ⓣㄖ 𝐖Ỗ𝐫ᵏ Ⓞℕ  🎁♝
 
 Sorting by Keyword
-- Add a section that is for rating a class with similar functionality to the rate my professor tab
-- allow admin to block people from posting reviews if their review gets deleted 3 times
-- allow people to sort based on most postive reviews and most negative reviews 
-- allow tags to be added to reviews so that the professor can see the most postive reviews and the most negative reviews
+- allow tags to be added to reviews so that the professor can see the most positive reviews and the most negative reviews
 - general UI (changed login and registration page)
 
 Done:
-- created Admin ( username: admin , password: adminpass)
-- created like and dislike
-- students remain anaoymus
-- added replys
-- added teachers login and dashboard
+- created Admin ( username: admin, password: adminpass)
+- created likes and dislikes
+- students remain anonymous
+- added replies
+- added teachers' login and dashboard
 - made reviews show more details( when the class was took, what grade)
-- add search bar to the top to find classes and professors
-- remove email requirment when creating an account
-
+- add a  search bar to the top to find classes and professors
+- Remove email requirement when creating an account
+- Add a section that is for rating a class with similar functionality to the Rate My Professor tab
+- allow admin to block people from posting reviews if their review gets deleted 3 times
+- allow people to sort based on the most positive reviews and the most negative reviews 
