@@ -2,12 +2,46 @@
 
 {% block content %}
 <div class="row">
-    <div class="col-md-12 text-center mb-5">
+    <div class="col-md-12 text-center mb-4">
         <h1>Find Your Professor</h1>
         <p class="lead">Search reviews, ratings, and more.</p>
     </div>
 </div>
 
+<!-- Simple Search Options -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card mb-3">
+            <div class="card-body">
+                <h5 class="card-title">Search Professors</h5>
+                <form action="{{ url_for('search') }}" method="GET" class="mb-2">
+                    <div class="input-group">
+                        <input type="text" class="form-control" name="q" placeholder="Professor name or department">
+                        <button class="btn btn-primary" type="submit">Search</button>
+                    </div>
+                </form>
+                <a href="{{ url_for('rate_class') }}" class="btn btn-outline-primary btn-sm">Rate a Professor</a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card mb-3">
+            <div class="card-body">
+                <h5 class="card-title">Search Courses</h5>
+                <form action="{{ url_for('course_search') }}" method="GET" class="mb-2">
+                    <div class="input-group">
+                        <input type="text" class="form-control" name="q" placeholder="Course code or title">
+                        <button class="btn btn-success" type="submit">Search</button>
+                    </div>
+                </form>
+                <a href="{{ url_for('review_course') }}" class="btn btn-outline-success btn-sm">Rate a Course</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Original Professors List (UNCHANGED from your original) -->
 <div class="row">
     {% for prof in professors %}
     <div class="col-md-4 mb-4">

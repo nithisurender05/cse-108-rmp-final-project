@@ -6,6 +6,13 @@
         <div class="card-body">
             <h2>Rate a Class</h2>
             <p class="text-muted">Choose a class to rate. After selecting a class, pick the professor who taught it or add a new professor.</p>
+            
+            <!-- Added this simple note about course reviews -->
+            <div class="alert alert-info mb-4">
+                <strong>Note:</strong> This form rates a <strong>professor</strong> for a specific course.
+                To rate the <strong>course content itself</strong> (independent of the professor),
+                use the <a href="{{ url_for('review_course') }}" class="alert-link">Course Review form</a>.
+            </div>
 
             <form id="rateForm" method="POST" action="{{ url_for('rate_class') }}">
                 <div class="mb-3">

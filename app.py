@@ -54,15 +54,26 @@ class Review(db.Model):
     votes = db.relationship('ReviewVote', backref='review', lazy=True)
     user = db.relationship('User', backref='reviews', uselist=False)
     replies = db.relationship('ReviewReply', backref='review', lazy=True)
-    
-    
+
+class CourseReview(db.Model):
+    __tablename__ = 'course_reviews'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
+    course_id = db.Column(db.Integer, db.ForeignKey('courses.id'), nullable=False)
+    rating = db.Column(db.Integer, nullable=False)
+    comment = db.Column(db.Text)
+    grade = db.Column(db.String(5), nullable=True)
+    semester = db.Column(db.String(10), nullable=True)
+    year = db.Column(db.Integer, nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    user = db.relationship('User', backref='course_reviews', uselist=False)
 
 class Course(db.Model):
     __tablename__ = 'courses'
     id = db.Column(db.Integer, primary_key=True)
     code = db.Column(db.String(32), unique=True, nullable=False)
     title = db.Column(db.String(200), nullable=True)
-
+    reviews = db.relationship('CourseReview', backref='course', lazy=True)  # ADD THIS LINE
 
 class ReviewVote(db.Model):
     __tablename__ = 'review_votes'
@@ -70,7 +81,6 @@ class ReviewVote(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     review_id = db.Column(db.Integer, db.ForeignKey('reviews.id'), nullable=False)
     vote_type = db.Column(db.Integer, nullable=False) # 1 = Like, -1 = Dislike
-
 
 class ReviewReply(db.Model):
     __tablename__ = 'review_replies'
@@ -80,7 +90,6 @@ class ReviewReply(db.Model):
     comment = db.Column(db.Text, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     user = db.relationship('User', backref='replies', uselist=False)
-
 
 ## Reply model removed — no direct replies to reviews
 
@@ -98,7 +107,15 @@ def home():
     # unless they specifically request to view other professors using '?view=others'
     if current_user.is_authenticated and getattr(current_user, 'role', None) == 'professor' and request.args.get('view') != 'others':
         return redirect(url_for('professor_dashboard'))
-    return render_template('index.html', professors=professors)
+    
+    # Get course count for the homepage
+    total_courses = Course.query.count()
+    total_reviews = Review.query.count() + CourseReview.query.count()
+    
+    return render_template('index.html', 
+                         professors=professors, 
+                         total_courses=total_courses,
+                         total_reviews=total_reviews)
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
@@ -291,8 +308,27 @@ def search():
     for code, profs in courses_map.items():
         course_list.append({'course_code': code, 'professors': [{'id': pid, 'name': pname} for pid, pname in sorted(list(profs))]})
 
-    return render_template('search_results.html', query=q_stripped, professors=combined_profs, courses=course_list)
+    # Add course search results to the same search
+    course_results = Course.query.filter(
+        or_(
+            Course.code.ilike(f'%{q_stripped}%'),
+            Course.title.ilike(f'%{q_stripped}%') if Course.title else False
+        )
+    ).all()
+    
+    # Calculate average ratings for courses
+    for course in course_results:
+        if course.reviews:
+            avg = sum([r.rating for r in course.reviews]) / len(course.reviews)
+            course.avg_rating = round(avg, 1)
+        else:
+            course.avg_rating = None
 
+    return render_template('search_results.html', 
+                         query=q_stripped, 
+                         professors=combined_profs, 
+                         courses=course_list,
+                         course_results=course_results)
 
 @app.route('/api/professors_for_course')
 def professors_for_course():
@@ -322,7 +358,6 @@ def professors_for_course():
 
     out = [{'id': pid, 'name': name} for pid, name in profs.items()]
     return jsonify(out)
-
 
 @app.route('/rate_class', methods=['GET', 'POST'])
 def rate_class():
@@ -427,10 +462,6 @@ def api_course_codes():
     codes = [rc[0] for rc in db.session.query(Review.course_code).distinct().all() if rc[0]]
     codes = sorted({c.strip() for c in codes})
     return jsonify(codes)
-
-
-
-
 
 @app.route('/review/<int:review_id>/reply', methods=['POST'])
 @login_required
@@ -573,10 +604,6 @@ def add_review(id):
     db.session.commit()
     return redirect(url_for('professor_detail', id=id))
 
-
-## Reply endpoint removed — replies are no longer supported
-
-
 @app.route('/professor/add', methods=['GET', 'POST'])
 def add_professor():
     if request.method == 'POST':
@@ -647,6 +674,129 @@ def professor_signup():
         flash('Professor account created and profile registered.', 'success')
         return redirect(url_for('professor_dashboard'))
     return render_template('professor_signup.html')
+
+@app.route('/course/<string:course_code>')
+def course_detail(course_code):
+    course = Course.query.filter_by(code=course_code).first_or_404()
+    
+    # Get all course reviews
+    reviews = course.reviews
+    
+    # Calculate average rating
+    avg_rating = 0
+    if reviews:
+        avg_rating = sum([r.rating for r in reviews]) / len(reviews)
+    
+    # Get professor reviews for this course
+    professor_reviews = Review.query.filter_by(course_code=course_code).all()
+    
+    # Calculate average professor rating for this course
+    prof_avg_rating = 0
+    if professor_reviews:
+        prof_avg_rating = sum([r.rating for r in professor_reviews]) / len(professor_reviews)
+    
+    # Get all professors who taught this course
+    professors = {}
+    for review in professor_reviews:
+        if review.professor:
+            prof_id = review.professor.id
+            if prof_id not in professors:
+                professors[prof_id] = {
+                    'professor': review.professor,
+                    'review_count': 0,
+                    'avg_rating': 0
+                }
+            professors[prof_id]['review_count'] += 1
+    
+    # Calculate average rating per professor for this course
+    for prof_id, data in professors.items():
+        prof_reviews = [r for r in professor_reviews if r.professor_id == prof_id]
+        if prof_reviews:
+            data['avg_rating'] = sum([r.rating for r in prof_reviews]) / len(prof_reviews)
+    
+    return render_template('course_detail.html',
+                         course=course,
+                         reviews=reviews,
+                         avg_rating=round(avg_rating, 1),
+                         professors=list(professors.values()),
+                         prof_avg_rating=round(prof_avg_rating, 1))
+
+@app.route('/review/course', methods=['GET', 'POST'])
+@login_required
+def review_course():
+    if request.method == 'POST':
+        course_code = request.form.get('course', '').strip()
+        rating = request.form.get('rating')
+        comment = request.form.get('comment', '').strip() or None
+        grade = request.form.get('grade', '').strip() or None
+        semester = request.form.get('semester', '').strip() or None
+        year = request.form.get('year', '').strip()
+        
+        if not course_code or not rating:
+            flash('Course and rating are required.', 'danger')
+            return redirect(url_for('review_course'))
+        
+        try:
+            rating_int = int(rating)
+        except ValueError:
+            flash('Invalid rating.', 'danger')
+            return redirect(url_for('review_course'))
+        
+        # Find or create course
+        course = Course.query.filter_by(code=course_code).first()
+        if not course:
+            course = Course(code=course_code)
+            db.session.add(course)
+            db.session.commit()
+        
+        # Create course review
+        review = CourseReview(
+            user_id=current_user.id,
+            course_id=course.id,
+            rating=rating_int,
+            comment=comment,
+            grade=grade,
+            semester=semester,
+            year=int(year) if year and year.isdigit() else None
+        )
+        
+        db.session.add(review)
+        db.session.commit()
+        
+        flash('Course review submitted!', 'success')
+        return redirect(url_for('course_detail', course_code=course_code))
+    
+    # GET request - show form
+    course_code = request.args.get('course', '')
+    return render_template('review_course.html', course_code=course_code)
+
+@app.route('/course/search')
+def course_search():
+    q = request.args.get('q', '').strip()
+    if not q:
+        return redirect(url_for('home'))
+    
+    # Search courses by code or title
+    courses = Course.query.filter(
+        or_(
+            Course.code.ilike(f'%{q}%'),
+            Course.title.ilike(f'%{q}%') if Course.title else False
+        )
+    ).all()
+    
+    # Calculate average rating for each course
+    for course in courses:
+        if course.reviews:
+            avg = sum([r.rating for r in course.reviews]) / len(course.reviews)
+            course.avg_rating = round(avg, 1)
+        else:
+            course.avg_rating = None
+    
+    return render_template('search_results.html', 
+                         query=q, 
+                         professors=[], 
+                         courses=[], 
+                         course_results=courses)
 
 @app.route('/vote/<int:review_id>/<vote_type>', methods=['POST'])
 def vote_review(review_id, vote_type):

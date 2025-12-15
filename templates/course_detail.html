@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <h1>{{ course.code }}</h1>
+        {% if course.title %}<h3 class="text-muted">{{ course.title }}</h3>{% endif %}
+        
+        <!-- Course Rating -->
+        <div class="card mb-4">
+            <div class="card-body">
+                <h5>Course Rating: {{ avg_rating }}/5</h5>
+                <p>Based on {{ reviews|length }} review(s)</p>
+                <a href="{{ url_for('review_course', course_code=course.code) }}" class="btn btn-primary">
+                    Review This Course
+                </a>
+            </div>
+        </div>
+
+        <!-- Course Reviews -->
+        <h3>Course Reviews</h3>
+        {% if reviews %}
+            {% for review in reviews %}
+            <div class="card mb-3">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <h5>Rating: {{ review.rating }}/5</h5>
+                        <small class="text-muted">{{ review.created_at.strftime('%Y-%m-%d') }}</small>
+                    </div>
+                    {% if review.comment %}
+                    <p class="mt-2">{{ review.comment }}</p>
+                    {% endif %}
+                    {% if review.grade %}
+                    <small>Grade: {{ review.grade }}</small>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="alert alert-info">
+                No course reviews yet. Be the first to review this course!
+            </div>
+        {% endif %}
+    </div>
+
+    <div class="col-md-4">
+        <!-- Professors who taught this course -->
+        <div class="card">
+            <div class="card-body">
+                <h5>Professors Who Taught This Course</h5>
+                {% if professors %}
+                    <ul class="list-group">
+                    {% for prof_data in professors %}
+                        <li class="list-group-item">
+                            <a href="{{ url_for('professor_detail', id=prof_data.professor.id) }}">
+                                {{ prof_data.professor.name }}
+                            </a>
+                            <br>
+                            <small>Rating: {{ prof_data.avg_rating }}/5 ({{ prof_data.review_count }} reviews)</small>
+                        </li>
+                    {% endfor %}
+                    </ul>
+                {% else %}
+                    <p class="text-muted">No professor reviews for this course yet.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
