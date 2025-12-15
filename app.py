@@ -28,6 +28,7 @@ class User(db.Model, UserMixin):
     email = db.Column(db.String(100), unique=True, nullable=True)
     password_hash = db.Column(db.String(255), nullable=False)
     role = db.Column(db.String(20), nullable=False, server_default='student')
+    review_deletion_count = db.Column(db.Integer, default=0, nullable=False)
 
 class Professor(db.Model):
     __tablename__ = 'professors'
@@ -534,6 +535,15 @@ def admin_delete_review(review_id):
         flash('Review not found.', 'warning')
         return redirect(url_for('admin_reviews'))
 
+    # Increment deletion count for the user who wrote the review
+    if review.user:
+        review.user.review_deletion_count += 1
+        db.session.add(review.user)
+        
+        # Check if user should be blocked (3 or more deletions)
+        if review.user.review_deletion_count >= 3 and review.user.role != 'admin':
+            flash(f'User {review.user.username} has been blocked from posting reviews due to 3+ deletions.', 'warning')
+
     # Delete associated votes first
     ReviewVote.query.filter_by(review_id=review.id).delete()
     db.session.delete(review)
@@ -583,6 +593,9 @@ def generate_reviews_summary(reviews):
 
 @app.route('/professor/<int:id>/add_review', methods=['POST'])
 def add_review(id):
+    if current_user.is_authenticated and current_user.review_deletion_count >= 3:
+        flash('Your account has been blocked from posting reviews due to multiple rule violations.', 'danger')
+        return redirect(url_for('professor_detail', id=id))
     rating = int(request.form.get('rating'))
     course = request.form.get('course')
     comment = request.form.get('comment')
@@ -725,6 +738,11 @@ def course_detail(course_code):
 @login_required
 def review_course():
     if request.method == 'POST':
+        # Check if user is blocked
+        if current_user.review_deletion_count >= 3:
+            flash('Your account has been blocked from posting reviews due to multiple rule violations.', 'danger')
+            return redirect(url_for('review_course'))
+        
         course_code = request.form.get('course', '').strip()
         rating = request.form.get('rating')
         comment = request.form.get('comment', '').strip() or None
