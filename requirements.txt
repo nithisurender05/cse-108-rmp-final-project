@@ -1,5 +1,6 @@
-flask 
-flask-sqlalchemy
-flask-login
-flask-bcrypt
-mysql-connector-python
+Flask
+Flask-SQLAlchemy
+Flask-Login
+Flask-Bcrypt
+gunicorn
+psycopg2-binary
