@@ -85,7 +85,7 @@ def seed_data():
         db.session.commit()
 
         # Add a few reviews for Dr. Jones
-        r1 = Review(user_id=test_user.id, professor_id=prof_profile.id, course_code="HIST 200", rating=2, comment="Hard grading and unclear expectations.", grade='B-', semester='Spring', year=2023)
+        r1 = Review(user_id=test_user.id, professor_id=prof_profile.id, course_code="HIST 200", rating=2, comment="Hard and unclear.", grade='B-', semester='Spring', year=2023)
         r2 = Review(user_id=test_user.id, professor_id=prof_profile.id, course_code="HIST 201", rating=4, comment="Great lectures but heavy workload.", grade='A-', semester='Fall', year=2022)
         db.session.add_all([r1, r2])
         db.session.commit()
