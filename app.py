@@ -535,20 +535,32 @@ def admin_delete_review(review_id):
         flash('Review not found.', 'warning')
         return redirect(url_for('admin_reviews'))
 
-    # Increment deletion count for the user who wrote the review
-    if review.user:
-        review.user.review_deletion_count += 1
-        db.session.add(review.user)
+    try:
+        # Delete associated replies first
+        ReviewReply.query.filter_by(review_id=review.id).delete()
         
-        # Check if user should be blocked (3 or more deletions)
-        if review.user.review_deletion_count >= 3 and review.user.role != 'admin':
-            flash(f'User {review.user.username} has been blocked from posting reviews due to 3+ deletions.', 'warning')
+        # Delete associated votes
+        ReviewVote.query.filter_by(review_id=review.id).delete()
+        
+        # Increment deletion count for the user who wrote the review
+        if review.user:
+            review.user.review_deletion_count += 1
+            db.session.add(review.user)
+            
+            # Check if user should be blocked (3 or more deletions)
+            if review.user.review_deletion_count >= 3 and review.user.role != 'admin':
+                flash(f'User {review.user.username} has been blocked from posting reviews due to 3+ deletions.', 'warning')
 
-    # Delete associated votes first
-    ReviewVote.query.filter_by(review_id=review.id).delete()
-    db.session.delete(review)
-    db.session.commit()
-    flash('Review deleted successfully.', 'success')
+        # Now delete the review
+        db.session.delete(review)
+        db.session.commit()
+        flash('Review deleted successfully.', 'success')
+        
+    except Exception as e:
+        db.session.rollback()
+        app.logger.exception('Error deleting review')
+        flash(f'Error deleting review: {str(e)}', 'danger')
+    
     return redirect(url_for('admin_reviews'))
 
 
@@ -558,15 +570,22 @@ def admin_delete_reply(reply_id):
     if getattr(current_user, 'role', None) != 'admin':
         flash('Admin access required.', 'danger')
         return redirect(url_for('home'))
+    
     reply = ReviewReply.query.get(reply_id)
     if not reply:
         flash('Reply not found.', 'warning')
         return redirect(url_for('admin_reviews'))
-    db.session.delete(reply)
-    db.session.commit()
-    flash('Reply deleted.', 'success')
+    
+    try:
+        db.session.delete(reply)
+        db.session.commit()
+        flash('Reply deleted.', 'success')
+    except Exception as e:
+        db.session.rollback()
+        app.logger.exception('Error deleting reply')
+        flash(f'Error deleting reply: {str(e)}', 'danger')
+    
     return redirect(url_for('admin_reviews'))
-
 
 def generate_reviews_summary(reviews):
     # Simple heuristic summarizer: collect comments for negative/neutral reviews (rating <= 3)
