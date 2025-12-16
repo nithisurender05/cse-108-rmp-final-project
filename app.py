@@ -5,12 +5,17 @@ from flask_bcrypt import Bcrypt
 from datetime import datetime
 from sqlalchemy import func, or_
 import re
+import os
+
 
 app = Flask(__name__)
 
 # CONFIGURATION
 # Replace 'root', 'password' with your actual MySQL credentials
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///site.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get(
+    'DATABASE_URL',
+    'sqlite:///site.db'  # fallback for local dev
+)
 app.config['SECRET_KEY'] = 'key' # Needed for session management
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
@@ -880,4 +885,8 @@ def vote_review(review_id, vote_type):
     return jsonify({'status': 'success', 'likes': likes_count, 'dislikes': dislikes_count, 'user_vote': user_vote})
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port)
+
+with app.app_context():
+    db.create_all()
